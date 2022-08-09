@@ -7,46 +7,48 @@ require('dotenv').config()
 
 let db,
     dbConnectionStr = process.env.DB_STRING,
-    dbName = 'rap'
+    dbName = 'movie-list'
 
+//////////Connect to MongoDB///////////////////////////////////////////////////////////
 MongoClient.connect(dbConnectionStr, { useUnifiedTopology: true })
     .then(client => {
         console.log(`Connected to ${dbName} Database`)
         db = client.db(dbName)
     })
-    
+
+///////////Middleware/////////////////////////////////////////////////////////////////
 app.set('view engine', 'ejs')
 app.use(express.static('public'))
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
-
+///////////Handles Root Homepage Route////////////////////////////////////////////////
 app.get('/',(request, response)=>{
-    db.collection('rappers').find().sort({likes: -1}).toArray()
+    db.collection('movies').find().sort({likes: -1}).toArray()
     .then(data => {
         response.render('index.ejs', { info: data })
     })
     .catch(error => console.error(error))
 })
 
-app.post('/addRapper', (request, response) => {
-    db.collection('rappers').insertOne({stageName: request.body.stageName,
-    birthName: request.body.birthName, likes: 0})
+//////////Handles Adding a Movie////////////////////////////////////////////////////
+app.post('/addMovie', (request, response) => {
+    db.collection('movies').insertOne({title: request.body.title, likes: 0})
     .then(result => {
-        console.log('Rapper Added')
+        console.log('Movie Added')
         response.redirect('/')
     })
     .catch(error => console.error(error))
 })
 
+
+//////////Handles Adding a Like/////////////////////////////////////////////////////
 app.put('/addOneLike', (request, response) => {
-    db.collection('rappers').updateOne({stageName: request.body.stageNameS, birthName: request.body.birthNameS,likes: request.body.likesS},{
+    console.log(request.body.likes)
+    db.collection('movies').updateOne({title: request.body.stageNameS, likes: request.body.currentLikes},{
         $set: {
-            likes:request.body.likesS + 1
+            likes:request.body.currentLikes + 1
           }
-    },{
-        sort: {_id: -1},
-        upsert: true
     })
     .then(result => {
         console.log('Added One Like')
@@ -56,11 +58,13 @@ app.put('/addOneLike', (request, response) => {
 
 })
 
-app.delete('/deleteRapper', (request, response) => {
-    db.collection('rappers').deleteOne({stageName: request.body.stageNameS})
+
+////////Handles Delete Requests//////////////////////////////////////////////////////////
+app.delete('/deleteMovie', (request, response) => {
+    db.collection('movies').deleteOne({title: request.body.stageNameS})
     .then(result => {
-        console.log('Rapper Deleted')
-        response.json('Rapper Deleted')
+        console.log('Movie Deleted')
+        response.json('Movie Deleted')
     })
     .catch(error => console.error(error))
 
